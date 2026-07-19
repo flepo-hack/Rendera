@@ -6,14 +6,23 @@ workflows:
       vars:
         GEMINI_API_KEY: "dummy_key_here"
     scripts:
-      - name: Check directory structure
+      - name: Unzip source code
         script: |
-          pwd
+          echo "Extracting rendera.zip..."
+          unzip -o rendera.zip -d .
+          echo "Contents after unzip:"
           ls -la
-          ls -la app/ || echo "app folder not found"
-      - name: Build Android APK
+      - name: Find and build project
         script: |
-          # Käytetään Codemagicin omaa Gradlea
-          gradle assembleDebug
+          # Etsitään kansio, jossa on settings.gradle.kts
+          PROJECT_DIR=$(find . -name settings.gradle.kts -print -quit | xargs dirname)
+          if [ -n "$PROJECT_DIR" ]; then
+            echo "Project found in $PROJECT_DIR, building there"
+            cd "$PROJECT_DIR"
+            gradle assembleDebug
+          else
+            echo "ERROR: settings.gradle.kts not found!"
+            exit 1
+          fi
     artifacts:
       - app/build/outputs/apk/debug/*.apk
