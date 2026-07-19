@@ -18,12 +18,10 @@ workflows:
           GRADLE_VERSION=9.3.1
           wget -q https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip
           unzip -q gradle-${GRADLE_VERSION}-bin.zip -d /usr/local/
-          export PATH=/usr/local/gradle-${GRADLE_VERSION}/bin:$PATH
-          gradle --version
-      - name: Build APK with correct Gradle
+          ls -la /usr/local/gradle-9.3.1/bin/
+      - name: Build APK with correct Gradle (absolute path)
         script: |
-          export PATH=/usr/local/gradle-9.3.1/bin:$PATH
-          echo "Using Gradle: $(which gradle)"
+          # Etsitään projekti
           PROJECT_DIR=$(find . -name settings.gradle.kts -print -quit | xargs dirname)
           if [ -z "$PROJECT_DIR" ]; then
             echo "ERROR: settings.gradle.kts not found!"
@@ -31,7 +29,7 @@ workflows:
           fi
           echo "Project directory: $PROJECT_DIR"
           cd "$PROJECT_DIR"
-          # Varmistetaan, että käytetään oikeaa Gradlea, ei wrapperia
-          gradle assembleDebug --no-daemon
+          # Käytetään absoluuttista polkua, ei PATH-hassuttelua
+          /usr/local/gradle-9.3.1/bin/gradle assembleDebug --no-daemon
     artifacts:
       - app/build/outputs/apk/debug/*.apk
