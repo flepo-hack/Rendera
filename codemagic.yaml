@@ -5,27 +5,33 @@ workflows:
     environment:
       vars:
         GEMINI_API_KEY: "dummy_key_here"
-        GRADLE_VERSION: "9.3.1"   # <--- Tämä pakottaa oikean version
     scripts:
       - name: Unzip source code
         script: |
           echo "Extracting rendera.zip..."
           unzip -o rendera.zip -d .
-          echo "Contents after unzip:"
+          echo "Project structure after extraction:"
           ls -la
-      - name: Find and build project
+      - name: Install Gradle 9.3.1
         script: |
-          # Etsitään kansio, jossa on settings.gradle.kts
+          echo "Installing Gradle 9.3.1..."
+          GRADLE_VERSION=9.3.1
+          wget -q https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip
+          unzip -q gradle-${GRADLE_VERSION}-bin.zip -d /usr/local/
+          export PATH=/usr/local/gradle-${GRADLE_VERSION}/bin:$PATH
+          gradle --version
+      - name: Build APK with correct Gradle
+        script: |
+          export PATH=/usr/local/gradle-9.3.1/bin:$PATH
+          echo "Using Gradle: $(which gradle)"
           PROJECT_DIR=$(find . -name settings.gradle.kts -print -quit | xargs dirname)
-          if [ -n "$PROJECT_DIR" ]; then
-            echo "Project found in $PROJECT_DIR, building there"
-            cd "$PROJECT_DIR"
-            # Varmistetaan, että käytetään oikeaa Gradle-versiota
-            export GRADLE_VERSION=9.3.1
-            gradle assembleDebug
-          else
+          if [ -z "$PROJECT_DIR" ]; then
             echo "ERROR: settings.gradle.kts not found!"
             exit 1
           fi
+          echo "Project directory: $PROJECT_DIR"
+          cd "$PROJECT_DIR"
+          # Varmistetaan, että käytetään oikeaa Gradlea, ei wrapperia
+          gradle assembleDebug --no-daemon
     artifacts:
       - app/build/outputs/apk/debug/*.apk
