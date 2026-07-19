@@ -5,6 +5,7 @@ workflows:
     environment:
       vars:
         GEMINI_API_KEY: "dummy_key_here"
+        GRADLE_VERSION: "9.3.1"   # <--- Tämä pakottaa oikean version
     scripts:
       - name: Unzip source code
         script: |
@@ -19,6 +20,8 @@ workflows:
           if [ -n "$PROJECT_DIR" ]; then
             echo "Project found in $PROJECT_DIR, building there"
             cd "$PROJECT_DIR"
+            # Varmistetaan, että käytetään oikeaa Gradle-versiota
+            export GRADLE_VERSION=9.3.1
             gradle assembleDebug
           else
             echo "ERROR: settings.gradle.kts not found!"
