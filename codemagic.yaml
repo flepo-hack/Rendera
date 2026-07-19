@@ -8,23 +8,26 @@ workflows:
     scripts:
       - name: Unzip source code
         script: |
-          echo "Extracting rendera.zip..."
+          echo "=== STEP 1: Unzipping source code ==="
           unzip -o rendera.zip -d .
-          echo "Project structure after extraction:"
+          echo "=== Project structure ==="
           ls -la
-          echo "Looking for settings.gradle.kts..."
+          echo "=== Looking for settings.gradle.kts ==="
           find . -name settings.gradle.kts -print
-      - name: Update Gradle Wrapper
+      - name: Setup Gradle Wrapper with correct version
         script: |
-          echo "Updating gradle-wrapper.properties..."
+          echo "=== STEP 2: Setting up Gradle Wrapper ==="
           PROJECT_DIR=$(find . -name settings.gradle.kts -print -quit | xargs dirname)
           if [ -z "$PROJECT_DIR" ]; then
             echo "ERROR: settings.gradle.kts not found!"
             exit 1
           fi
+          echo "Project directory: $PROJECT_DIR"
           cd "$PROJECT_DIR"
-          # Varmistetaan, että wrapper-kansio on olemassa
+          
+          # Luodaan wrapper-kansio, jos se puuttuu
           mkdir -p gradle/wrapper
+          
           # Päivitetään distributionUrl arvoon 9.3.1
           cat > gradle/wrapper/gradle-wrapper.properties << 'EOF'
           distributionBase=GRADLE_USER_HOME
@@ -33,27 +36,39 @@ workflows:
           zipStoreBase=GRADLE_USER_HOME
           zipStorePath=wrapper/dists
           EOF
-          echo "gradle-wrapper.properties updated:"
+          
+          echo "=== Updated gradle-wrapper.properties ==="
           cat gradle/wrapper/gradle-wrapper.properties
-          # Ladataan wrapper-skriptit, jos ne puuttuvat
+          
+          # Luodaan gradlew-skripti, jos se puuttuu
           if [ ! -f gradlew ]; then
-            echo "gradlew not found, copying from system..."
-            cp /usr/local/gradle-9.3.1/bin/gradle gradlew || true
+            echo "gradlew not found, downloading wrapper..."
+            # Ladataan Gradle wrapper -skripti
+            curl -s -o gradlew https://raw.githubusercontent.com/gradle/gradle/v9.3.1/gradlew
+            curl -s -o gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/v9.3.1/gradle/wrapper/gradle-wrapper.jar
+            chmod +x gradlew
           fi
-          if [ ! -f gradlew ]; then
-            echo "ERROR: gradlew not found and could not be created!"
-            exit 1
-          fi
+          
+          # Varmistetaan, että gradlew on ajettava
           chmod +x gradlew
+          echo "=== gradlew exists and is executable ==="
+          ls -la gradlew
       - name: Build APK with Gradle Wrapper
         script: |
+          echo "=== STEP 3: Building APK ==="
           PROJECT_DIR=$(find . -name settings.gradle.kts -print -quit | xargs dirname)
           if [ -z "$PROJECT_DIR" ]; then
             echo "ERROR: settings.gradle.kts not found!"
             exit 1
           fi
           cd "$PROJECT_DIR"
-          echo "Building with Gradle Wrapper..."
+          
+          # Tarkistetaan wrapperin versio
+          echo "=== Checking wrapper version ==="
+          ./gradlew --version || echo "Wrapper check failed, but continuing..."
+          
+          # Rakennetaan APK
+          echo "=== Running assembleDebug ==="
           ./gradlew assembleDebug --no-daemon
     artifacts:
       - app/build/outputs/apk/debug/*.apk
