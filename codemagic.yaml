@@ -4,11 +4,16 @@ workflows:
     max_build_duration: 30
     environment:
       vars:
-        GEMINI_API_KEY: "mock_key_here"
+        GEMINI_API_KEY: "dummy_key_here"
     scripts:
+      - name: Check directory structure
+        script: |
+          pwd
+          ls -la
+          ls -la app/ || echo "app folder not found"
       - name: Build Android APK
         script: |
-          cd app
-          ./gradlew assembleDebug
+          # Käytetään Codemagicin omaa Gradlea
+          gradle assembleDebug
     artifacts:
       - app/build/outputs/apk/debug/*.apk
